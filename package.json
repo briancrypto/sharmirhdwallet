@@ -1,0 +1,16 @@
+{
+  "name": "anx-wallet",
+  "version": "1.0.0",
+  "description": "anx wallet for various coins",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bip39": "2.5.0",
+    "bitcoinjs-lib": "3.3.2",
+    "secrets.js-grempe": "1.1.0"
+  }
+}
