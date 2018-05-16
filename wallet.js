@@ -2,6 +2,7 @@
 
 const bip39 = require('bip39')
 const bitcoin = require('bitcoinjs-lib')
+const bip32utils = require('bip32-utils')
 const secrets = require('secrets.js-grempe')
 const fs = require('fs')
 
@@ -45,6 +46,38 @@ function recoverWalletWithShamir() {
 }
 
 
-setupWalletWithShamir()
-recoverWalletWithShamir()
+//setupWalletWithShamir()
+//recoverWalletWithShamir()
 
+
+function testWallet1() {
+  var seedHex = '000102030405060708090a0b0c0d0e0f'
+  var mkNode = bitcoin.HDNode.fromSeedHex(seedHex)
+  console.log(mkNode.getAddress())
+  console.log(mkNode.getPublicKeyBuffer())
+  console.log(mkNode.toBase58())
+  console.log(mkNode.neutered().toBase58())
+
+  var m0hNode = mkNode.deriveHardened(0)
+  console.log(m0hNode.toBase58())
+  console.log(m0hNode.neutered().toBase58())
+
+  var m0H12H = mkNode.deriveHardened(0)
+                      .derive(1)
+                      .deriveHardened(2)
+  console.log(m0H12H.toBase58())
+  console.log(m0H12H.neutered().toBase58())
+
+  var chain = new bip32utils.Chain(m0hNode.neutered())
+  for (var k = 0; k < 110; ++k) 
+    chain.next()
+  var pubAdd = chain.get()
+  console.log(pubAdd)
+  var pubAdd99 = '18xmptXkeiWGLhr9JVjBpDTyR7Mxy4qgh3'
+  var addInChain = chain.find(pubAdd99)
+  console.log('address in chain should be 99, actual:' + addInChain)
+  console.log(chain.find('14icLpvdz5HRBEsQBFMLUuXxwZKvvi78TY'))
+
+}
+
+testWallet1()
