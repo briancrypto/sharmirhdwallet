@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bip32-utils": "^0.11.1",
     "bip39": "2.5.0",
     "bitcoinjs-lib": "3.3.2",
     "secrets.js-grempe": "1.1.0"
