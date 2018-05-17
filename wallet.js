@@ -52,15 +52,18 @@ function recoverWalletWithShamir() {
 
 function testWallet1() {
   var seedHex = '000102030405060708090a0b0c0d0e0f'
-  var mkNode = bitcoin.HDNode.fromSeedHex(seedHex)
+  var mkNode = bitcoin.HDNode.fromSeedHex(seedHex, bitcoin.networks.testnet)
   console.log(mkNode.getAddress())
   console.log(mkNode.getPublicKeyBuffer())
   console.log(mkNode.toBase58())
   console.log(mkNode.neutered().toBase58())
 
   var m0hNode = mkNode.deriveHardened(0)
-  console.log(m0hNode.toBase58())
-  console.log(m0hNode.neutered().toBase58())
+  console.log("m/0h:" + m0hNode.toBase58())
+  console.log("M/0h:" + m0hNode.neutered().toBase58())
+  // m/0h:tprv8bxNLu25VazNnppTCP4fyhyCvBHcYtzE3wr3cwYeL4HA7yf6TLGEUdS4QC1vLT63TkjRssqJe4CvGNEC8DzW5AoPUw56D1Ayg6HY4oy8QZ9
+  // M/0h:tpubD8eQVK4Kdxg3gHrF62jGP7dKVCoYiEB8dFSpuTawkL5YxTus5j5pf83vaKnii4bc6v2NVEy81P2gYrJczYne3QNNwMTS53p5uzDyHvnw2jm
+
 
   var m0H12H = mkNode.deriveHardened(0)
                       .derive(1)
@@ -80,4 +83,26 @@ function testWallet1() {
 
 }
 
+function importAndGenerateNewAddress() {
+  var xPub = 'xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw'
+  var m0hChain = new bip32utils.Chain(bitcoin.HDNode.fromBase58(xPub, bitcoin.networks.testnet))
+  for (var i=0; i<10; i++) {
+    m0hChain.next()
+    console.log(m0hChain.get())
+  }
+  /*
+    1JQheacLPdM5ySCkrZkV66G2ApAXe1mqLj
+    1MF1zYw5uEQiESDYq88vdEde6bLjah6tiu
+    1BWVwxpt9vbU1AZPEJmhDF2n5LK8asFGg8
+    1C4SsQwJ9rt2sEhaS5sz4QHWCiyF5YewKE
+    1HZa7XvUXhaybGosx7mB1qEwidApRHxoRV
+    13CsMSvPzH4gYQtfd2qbBmbhxdaNxDW95C
+    1CXYxpgiiGy9yZraeEHA5PQgU9Ds8iAHE1
+    1BUByp5PeTmbxSyZU2DCVNMeSoNk9Gb7h2
+    13ijQ7rFtQP6ASPk1eAiYqusiCsYHpjy3a
+    1CeQUeAG4E1wUuYjVcvgXJw8qct6ezE2gj
+  */
+}
+
 testWallet1()
+//importAndGenerateNewAddress()
