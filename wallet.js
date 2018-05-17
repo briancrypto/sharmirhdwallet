@@ -76,21 +76,21 @@ function testWallet1() {
     chain.next()
   var pubAdd = chain.get()
   console.log(pubAdd)
-  var pubAdd99 = '18xmptXkeiWGLhr9JVjBpDTyR7Mxy4qgh3'
+  var pubAdd99 = 'mxvEGj6pvxa9jciAtUgkud7oCkcRaZbDyk'
   var addInChain = chain.find(pubAdd99)
-  console.log('address in chain should be 99, actual:' + addInChain)
+  console.log('address in chain should be 110, actual:' + addInChain)
   console.log(chain.find('14icLpvdz5HRBEsQBFMLUuXxwZKvvi78TY'))
 
 }
 
 function importAndGenerateNewAddress() {
-  var xPub = 'xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw'
+  var xPub = 'tpubD8eQVK4Kdxg3gHrF62jGP7dKVCoYiEB8dFSpuTawkL5YxTus5j5pf83vaKnii4bc6v2NVEy81P2gYrJczYne3QNNwMTS53p5uzDyHvnw2jm'
   var m0hChain = new bip32utils.Chain(bitcoin.HDNode.fromBase58(xPub, bitcoin.networks.testnet))
   for (var i=0; i<10; i++) {
     m0hChain.next()
     console.log(m0hChain.get())
   }
-  /*
+  /* public mainnet
     1JQheacLPdM5ySCkrZkV66G2ApAXe1mqLj
     1MF1zYw5uEQiESDYq88vdEde6bLjah6tiu
     1BWVwxpt9vbU1AZPEJmhDF2n5LK8asFGg8
@@ -101,8 +101,47 @@ function importAndGenerateNewAddress() {
     1BUByp5PeTmbxSyZU2DCVNMeSoNk9Gb7h2
     13ijQ7rFtQP6ASPk1eAiYqusiCsYHpjy3a
     1CeQUeAG4E1wUuYjVcvgXJw8qct6ezE2gj
+
+    public testnet
+    mxvewdhKCenLkYgNa8irv1UM2omEWPMdEE
+    n1kyHc24iFqy1YhAYh7JT9qxxawSY1dt8z
+    mr2TF1urxx2inH2zwsk53AF6wKuqZ9n7Ek
+    mraQAU2GxtKHeMBC9erMtKVq4iZx1H61ei
+    mx5XQb1TLj2ENPHVfgjYqkTGacmXNTy5Xc
+    mhipeW1NoJVwKXNHLboy1gp2pdB5snN9Kf
+    ms3WFsmhXJQQkgLCMoFXuJd1L8pa96NiPp
+    mqz9GsANTVCrjZTBBbBaKHZyJnyT7j7Mo3
+    miEghAwEhRpLwYsMjD96Nm8CaCUFCZbvZp
+    msAMmhFEsFTCG22MDBu4ME9ThcUoZgruq1
   */
 }
 
-testWallet1()
+function signRawTransactionFor() {
+  var tx = new bitcoin.TransactionBuilder()
+  tx.addInput("3942ea61e76f910b396c888b217a935bcf60f3d4e2dedd4cb52c134f5d14b068", 0)
+  tx.addOutput("n1kyHc24iFqy1YhAYh7JT9qxxawSY1dt8z", 20000)
+  tx.sign(0, derivePrivateKey("mxvewdhKCenLkYgNa8irv1UM2omEWPMdEE"))
+}
+
+function derivePrivateKey() {
+  //https://github.com/bitcoinjs/bitcoinjs-lib/issues/997
+  var seedHex = '000102030405060708090a0b0c0d0e0f'
+  var mkNode = bitcoin.HDNode.fromSeedHex(seedHex, bitcoin.networks.testnet)
+  var m0hNode = mkNode.deriveHardened(0)
+  var privateKeys = []
+  for(var i=0; i<10; i++) {
+    var pk = m0hNode.derive(i).keyPair
+    var pkXpub = m0hNode.neutered().derive(i).keyPair
+    console.log("public key (from pkpair):" + pk.getAddress())
+    console.log("public key (from xpub)  :" + pkXpub.getAddress())
+    console.log("private key:" + pk.toWIF())
+    //console.log("private key:" + pkXpub.toWIF())
+  }
+
+
+}
+  
+
+//testWallet1()
+derivePrivateKey()
 //importAndGenerateNewAddress()
