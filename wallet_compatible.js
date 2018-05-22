@@ -1,5 +1,7 @@
 'use strict'
 
+const minimist = require('minimist')
+
 const bip39 = require('bip39')
 const bitcoin = require('bitcoinjs-lib')
 const bip32utils = require('bip32-utils')
@@ -36,9 +38,8 @@ function setupWalletWithShamir() {
   console.log("successfully written secrets to split files.")
 }
 
-const recoveryFiles = ['out0', 'out2']
-
-function recoverWalletWithShamir() {
+function recoverWalletWithShamir(recoveryFiles) {
+  recoveryFiles = recoveryFiles || ['out0', 'out2']
   var recoveryHexArr = []
   for(var i=0; i<recoveryFiles.length; i++) {
     var mHex = fs.readFileSync(recoveryFiles[i]).toString('binary')
@@ -78,6 +79,10 @@ BitcoinWallet.prototype.init = function () {
   var add0FromXpubNode = bitcoin.HDNode.fromBase58(this.xpubString, this.network)
   this.chain0 = new bip32utils.Chain(add0FromXpubNode.derive(0))
   this.acc0ChildNode = acc0Node.derive(0)
+}
+
+BitcoinWallet.prototype.getXpubString = function() {
+  return this.xpubString
 }
 
 BitcoinWallet.prototype.getNextPubAddress = function(batchPubAddToGenerate) {
@@ -128,18 +133,45 @@ BitcoinWallet.prototype.getPrivateKeys = function(publicKeys) {
 */
 BitcoinWallet.prototype.createRawTransaction = function(inputs, outputs) {
   var txBuilder = new bitcoin.TransactionBuilder(this.network)
-  inputs.forEach(input => {
-    txBuilder.addInput(input["tx"], input["tx_input_id"])
-    console.log("tx:%s, txid:%i" , input["tx"], input["tx_input_id"])
-  })
-  outputs.forEach(output => {
-    txBuilder.addOutput(output["out_address"], output["amount"])
-    console.log("out_address:%s, amount:%i" , output["out_address"], output["amount"])
-  })
-  this.tempSignTransaction(txBuilder)
 
-  // var rawIncompleteTx = txBuilder.buildIncomplete().toHex()
-  // console.log(rawIncompleteTx);
+  var inputsPromise = function() {
+    var promises = []
+    inputs.forEach(input => {
+      var txPromise = BitcoinWallet.getTransaction(input["tx"]).then(tx => {
+        var outputs = tx.vout
+        var output = outputs.find(o => (o.n == input["tx_input_id"]))
+        console.log("output.scriptPubKey.asm is %o", output.scriptPubKey.asm)
+        var prevTxScript = bitcoin.script.fromASM(output.scriptPubKey.asm)
+        txBuilder.addInput(input["tx"], input["tx_input_id"], null, prevTxScript)
+        console.log("tx:%s, txid:%i" , input["tx"], input["tx_input_id"])
+      })
+      promises.push(txPromise)
+    })
+    return Promise.all(promises)
+  }
+
+  var outputsPromise = function() {
+    return new Promise((resolve, reject) => {
+      outputs.forEach(output => {
+        txBuilder.addOutput(output["out_address"], output["amount"])
+        console.log("out_address:%s, amount:%i" , output["out_address"], output["amount"])
+      })
+    resolve()    
+    })
+  }
+
+
+  inputsPromise().then( () => {
+    return outputsPromise()
+  }).then( () => {
+    var rawIncompleteTx = txBuilder.buildIncomplete().toHex()
+    console.log("rawIncompleteTx:", rawIncompleteTx);
+    this.tempSignTransaction(txBuilder)
+
+    console.log('completed inputsPromise and outputsPromise!')
+  }).catch((error) => {
+    console.log("error: %o", error)
+  })
 
   // return rawIncompleteTx
 }
@@ -157,13 +189,13 @@ BitcoinWallet.prototype.tempSignTransaction = function(txBuilder) {
         var privKey = this.getPrivateKeys([address])
         console.log("private key for address %s is %o", address, privKey[address].toWIF())
         txBuilder.sign(0, privKey[address])
-        console.log(txBuilder.build().toHex())
+        console.log("tx in hex after sign:", txBuilder.build().toHex())
 
         // validate that the signing is good
         //Bitcoin.ECPair.fromPublicKeyBuffer(txb.inputs[0].pubKeys[0]).verify(tx.ins[0].hash, txb.inputs[0].signatures[0])
         //                                                             verify(tx.ins[0].hash, signature.signature)
         console.log("txb.inputs[0].pubKeys[0]:%o", txBuilder.inputs[0].pubKeys[0].toString('hex'))
-        this.verifySignature(txBuilder.build().toHex())
+        //this.verifySignature(txBuilder.build().toHex())
       }) 
   })
 }
@@ -276,6 +308,41 @@ function start() {
 
 
 start()
+
+function cli() {
+  var argv = minimist(process.argv.slice(2))
+  //console.dir(argv)
+  if(!!argv['n']) {
+    setupWalletWithShamir()
+  } else if(!!argv['r']) {
+    argv['_'].push(argv['r'])
+    recoverWalletWithShamir(argv['_'])
+  } else if(!!argv['a']) {
+      var bWallet = new BitcoinWallet("test")
+      bWallet.init()
+      bWallet.getNextPubAddress(argv['a'])
+  } else if(!!argv['x']) {
+      var bWallet = new BitcoinWallet("test")
+      bWallet.init()
+      console.log(bWallet.getXpubString())
+  } else if(!!argv['h']) {
+    console.log("options:")
+    console.log("-n                          'create new wallet'")
+    console.log("-r <files>                  'recover wallet with shamir shared key'")
+    console.log("-a <number of new address>  'generate n number of new addresses'")
+    console.log("-x                          'print out xpub to be used for new address generation'")
+  }
+}
+
+//cli()
+
+
+
+
+
+
+
+
 
 
 
